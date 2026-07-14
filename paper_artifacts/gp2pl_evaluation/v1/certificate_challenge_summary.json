@@ -1,0 +1,100 @@
+{
+  "artifact_kind": "certificate_and_symbol_invariance_challenge_matrix",
+  "case_count": 13,
+  "records": [
+    {
+      "duration_seconds": 0.8080623749410734,
+      "family": "Binding",
+      "kind": "rejection",
+      "name": "Unbound Body Variable",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.908381124958396,
+      "family": "Preparation",
+      "kind": "rejection",
+      "name": "Cyclic Producer Graph",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.8677452499978244,
+      "family": "Progress",
+      "kind": "rejection",
+      "name": "Obstruction Exchange",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.8595555420033634,
+      "family": "Release",
+      "kind": "rejection",
+      "name": "Ambiguous Capacity Key",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.822041834006086,
+      "family": "Threat",
+      "kind": "rejection",
+      "name": "Cyclic Completion Threat",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.80343199998606,
+      "family": "Negative Guard",
+      "kind": "rejection",
+      "name": "Forbidden Completion Addition",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.8376135000726208,
+      "family": "Numeric Progress",
+      "kind": "acceptance",
+      "name": "Exact Terminal Step",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.7531174590112641,
+      "family": "Vocabulary Renaming",
+      "kind": "invariance",
+      "name": "Predicate and Action Renaming",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.7621639169519767,
+      "family": "Parameter Permutation",
+      "kind": "invariance",
+      "name": "Action Parameter Permutation",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.7506789999315515,
+      "family": "Object Renaming",
+      "kind": "invariance",
+      "name": "Evidence Object Renaming",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.7603764169616625,
+      "family": "Irrelevant Fluent",
+      "kind": "invariance",
+      "name": "Unreferenced Static Injection",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.7786573329940438,
+      "family": "Negative Renaming",
+      "kind": "invariance",
+      "name": "Negative Guard Renaming",
+      "success": true
+    },
+    {
+      "duration_seconds": 0.803798665991053,
+      "family": "Progress Renaming",
+      "kind": "invariance",
+      "name": "Support Ranking Renaming",
+      "success": true
+    }
+  ],
+  "schema_version": 1,
+  "success": true,
+  "success_count": 13
+}

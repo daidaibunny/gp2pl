@@ -1,0 +1,50 @@
+{
+  "artifact_kind": "benchmark_provenance_compatibility",
+  "current_benchmark_sha256": "ca1ca388d2b1638114c1395b631f666f18509e93930944b4d20b7293c546d923",
+  "execution_benchmark_sha256": "0ab580ed45e3790bf986ab62b7f4e531ab6833c6182256284cf877b3861cacf8",
+  "replacements": [
+    {
+      "current_value": {
+        "filename": "temporal-nl-v1-20260712-145052-predictions-and-validation.tar.gz",
+        "normalization": {
+          "method": "release_relative_metadata_paths_v1",
+          "normalized_files": [
+            "artifacts/temporal_predictions/temporal-nl-v1-20260712-145052/goal_validation/summary.json",
+            "artifacts/temporal_predictions/temporal-nl-v1-20260712-145052/run_config.json"
+          ],
+          "source_sha256": "8cd7f9d92f6c19e304a5dea5e60e11cf02d30f6be00664aa7dd13669a6713033"
+        },
+        "sha256": "37cc42df9760670fc4a1b0bf964846b067b26e29cb056de01ce03a6dd1b80c38"
+      },
+      "execution_value": {
+        "filename": "temporal-nl-v1-20260712-145052-predictions-and-validation.tar.gz",
+        "sha256": "8cd7f9d92f6c19e304a5dea5e60e11cf02d30f6be00664aa7dd13669a6713033"
+      },
+      "json_pointer": "/provenance/source_delivery_archive"
+    },
+    {
+      "current_value": {
+        "filename": "temporal-nl-v1-20260711-final-public-handoff.tar.gz",
+        "sha256": "0bc219c619b434995361ed60c3b7ad8f80701d1875c8fc32adbfee00dadefebc"
+      },
+      "execution_value": {
+        "filename": "temporal-nl-v1-20260711-final-public-handoff.tar.gz",
+        "sha256": "f41b6d53bedf3406235f3b1e02290db0fbf5c100fa255b372ce5baf343813c0c"
+      },
+      "json_pointer": "/provenance/sealed_input_archives/public_handoff"
+    },
+    {
+      "current_value": {
+        "filename": "temporal-nl-v1-20260711-final-private-validation.tar.gz",
+        "sha256": "6d8e15ed50f472df976ae7093d221bff9e832cae0fad7285a435ce4e34ebbbc5"
+      },
+      "execution_value": {
+        "filename": "temporal-nl-v1-20260711-final-private-validation.tar.gz",
+        "sha256": "e54605eb9b2e3a50699133d5a3873725d589e17bbb62cedc84c119462291d1af"
+      },
+      "json_pointer": "/provenance/sealed_input_archives/private_validation"
+    }
+  ],
+  "schema_version": 1,
+  "serialization": "json_indent_2_sort_keys_true_newline"
+}

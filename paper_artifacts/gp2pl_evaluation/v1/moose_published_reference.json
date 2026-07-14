@@ -1,0 +1,136 @@
+{
+  "artifact_kind": "published_moose_planning_coverage_reference",
+  "published_results": {
+    "case_count_per_seed": 1080,
+    "domains": [
+      {
+        "case_count_per_seed": 90,
+        "domain": "barman",
+        "mean_solved_count": 90.0,
+        "source_label": "Barman"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "ferry",
+        "mean_solved_count": 90.0,
+        "source_label": "Ferry"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "gripper",
+        "mean_solved_count": 90.0,
+        "source_label": "Gripper"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "logistics",
+        "mean_solved_count": 89.6,
+        "source_label": "Logistics"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "miconic",
+        "mean_solved_count": 90.0,
+        "source_label": "Miconic"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "rovers",
+        "mean_solved_count": 90.0,
+        "source_label": "Rovers"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "satellite",
+        "mean_solved_count": 90.0,
+        "source_label": "Satellite"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "transport",
+        "mean_solved_count": 90.0,
+        "source_label": "Transport"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "numeric-ferry",
+        "mean_solved_count": 90.0,
+        "source_label": "NFerry"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "numeric-miconic",
+        "mean_solved_count": 90.0,
+        "source_label": "NMiconic"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "numeric-minecraft",
+        "mean_solved_count": 90.0,
+        "source_label": "NMinecraft"
+      },
+      {
+        "case_count_per_seed": 90,
+        "domain": "numeric-transport",
+        "mean_solved_count": 90.0,
+        "source_label": "NTransport"
+      }
+    ],
+    "mean_solved_count": 1079.6,
+    "metric": "mean solved test instances across five trained MOOSE models",
+    "runtime_comparison_allowed": false,
+    "seed_count": 5,
+    "validation_origin": "reported_by_source_authors"
+  },
+  "schema_version": 1,
+  "scope_contracts": {
+    "gp2pl_extension": {
+      "case_contract": {
+        "count": 148
+      },
+      "domains": [
+        "blocksworld-clear",
+        "blocksworld-on",
+        "blocksworld-tower",
+        "depots"
+      ]
+    },
+    "original_moose": {
+      "case_contract": {
+        "count": 1080
+      },
+      "domains": [
+        "barman",
+        "ferry",
+        "gripper",
+        "logistics",
+        "miconic",
+        "rovers",
+        "satellite",
+        "transport",
+        "numeric-ferry",
+        "numeric-miconic",
+        "numeric-minecraft",
+        "numeric-transport"
+      ]
+    },
+    "selected_union": {
+      "case_contract": {
+        "count": 1228
+      }
+    }
+  },
+  "source": {
+    "arxiv_version": "2511.11095v1",
+    "authors": [
+      "Dillon Z. Chen",
+      "Till Hofmann",
+      "Toryn Q. Klassen",
+      "Sheila A. McIlraith"
+    ],
+    "bibliography_key": "Chen2025MooseExtended",
+    "table": "Table 4",
+    "title": "Satisficing and Optimal Generalised Planning via Goal Regression",
+    "url": "https://arxiv.org/abs/2511.11095v1"
+  }
+}

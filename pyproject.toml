@@ -1,0 +1,53 @@
+[project]
+name = "gp2pl"
+version = "0.1.0"
+description = "Certified compilation from generalized-planning evidence to BDI plan libraries"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dd>=0.6.0",
+    "lark>=1.1.9",
+    "ltlf2dfa>=1.0.2",
+    "tarski>=0.8.2",
+    "bitarray>=3.8.1",
+    "natsort>=7.0.1",
+    "clingo>=5.8.0",
+]
+
+[project.scripts]
+gp2pl = "main:main"
+
+[project.optional-dependencies]
+translation = [
+    "openai>=2.45.0",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["main"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = [
+    "domain_level_planning*",
+    "evaluation*",
+    "execution_logging*",
+    "language_model*",
+    "plan_library*",
+    "temporal_input*",
+    "temporal_specification*",
+    "utils*",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.pddl", "*.json", "*.asl"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.20",
+]
