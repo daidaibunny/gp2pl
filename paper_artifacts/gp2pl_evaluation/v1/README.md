@@ -13,8 +13,9 @@ used by the reported evaluation. The temporal benchmark is
   for the selected Certified Balanced compiler.
 - `temporal_execution_summary.json` contains the 1,228 final bound-query
   executions and all required verifier outcomes.
-- `external_reference_results.json` contains the 2,456 registered external
-  planning records and their PAR-2 aggregates.
+- `external_reference_results.json` contains 3,684 registered external
+  planning records: 1,228 achievement cases and two independent 1,228-case
+  temporal matrices for FOND4LTLf and TIDE, with their PAR-2 aggregates.
 - `raw_moose_extension_five_seed_summary.json` contains 740 measured Raw MOOSE
   extension records across five seeds.
 - `moose_published_reference.json` records the MOOSE values reported by its

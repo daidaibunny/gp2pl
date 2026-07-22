@@ -49,12 +49,21 @@ EXTERNAL_STATUS_COUNTS = {
 		"timeout": 108,
 		"valid": 844,
 	},
-	"direct_temporal": {
-		"compiler_failed": 109,
-		"planner_failed": 85,
-		"unsupported_identifier_encoding": 376,
-		"unsupported_numeric_pddl": 360,
-		"valid": 298,
+	"direct_temporal_by_method": {
+		"FOND4LTLf + LAMA": {
+			"compiler_failed": 109,
+			"planner_failed": 85,
+			"unsupported_identifier_encoding": 376,
+			"unsupported_numeric_pddl": 360,
+			"valid": 298,
+		},
+		"TIDE + LAMA": {
+			"no_plan": 188,
+			"planner_timeout": 5,
+			"unsupported_numeric_formula": 207,
+			"unsupported_numeric_pddl": 153,
+			"valid": 675,
+		},
 	},
 }
 OUTCOME_FILES = (
@@ -536,32 +545,60 @@ def _cross_seed_group_rows(
 def _verify_external_references(payload: Mapping[str, Any]) -> int:
 	if payload.get("artifact_kind") != "gp2pl_external_reference_results":
 		raise ValueError("unexpected external-reference artifact kind")
+	if payload.get("schema_version") != 2:
+		raise ValueError("unexpected external-reference schema version")
 	records = tuple(payload.get("records") or ())
 	identities = {
-		(str(row["record_kind"]), str(row["case_id"])) for row in records
+		(str(row["record_kind"]), str(row["method"]), str(row["case_id"]))
+		for row in records
 	}
-	if len(records) != 2_456 or len(identities) != len(records):
+	if len(records) != 3_684 or len(identities) != len(records):
 		raise ValueError("external records are incomplete or duplicated")
+	protocol = dict(payload.get("protocol") or {})
+	if (
+		protocol.get("record_count") != 3_684
+		or protocol.get("achievement_case_count") != 1_228
+		or protocol.get("temporal_case_count_per_method") != 1_228
+		or protocol.get("tide_num_workers") != 12
+	):
+		raise ValueError("external-reference protocol mismatch")
 	for row in records:
 		_require_case_measurements(row, runtime_key="elapsed_seconds")
 		if row["valid"] is True and row["record_kind"] == "direct_temporal":
 			validation = dict(row.get("execution_validation") or {})
 			if not all(
 				validation.get(key) is True
-				for key in ("replay_valid", "val_success", "gold_accepted")
+				for key in (
+					"replay_valid",
+					"val_success",
+					"gold_accepted",
+					"prediction_accepted",
+				)
 			):
 				raise ValueError("valid direct temporal result lacks verifier acceptance")
 	status_counts = {
-		kind: dict(
+		"achievement": dict(
 			sorted(
 				Counter(
 					str(row["status"])
 					for row in records
-					if row["record_kind"] == kind
+					if row["record_kind"] == "achievement"
 				).items(),
 			),
-		)
-		for kind in ("achievement", "direct_temporal")
+		),
+		"direct_temporal_by_method": {
+			method: dict(
+				sorted(
+					Counter(
+						str(row["status"])
+						for row in records
+						if row["record_kind"] == "direct_temporal"
+						and row["method"] == method
+					).items(),
+				),
+			)
+			for method in ("FOND4LTLf + LAMA", "TIDE + LAMA")
+		},
 	}
 	if status_counts != EXTERNAL_STATUS_COUNTS:
 		raise ValueError("external status aggregate mismatch")
@@ -598,6 +635,21 @@ def _verify_external_rows(
 		expected_count=492,
 		expected_valid=298,
 	)
+	tide_records = tuple(
+		row
+		for row in records
+		if row["variant"] == "tide_lama" and row["supported"] is True
+	)
+	_verify_measured_row(
+		rows["TIDE + LAMA"],
+		tide_records,
+		expected_count=868,
+		expected_valid=675,
+	)
+	if rows["FOND4LTLf + LAMA"]["unsupported_case_count"] != 736:
+		raise ValueError("FOND4LTLf unsupported-case count mismatch")
+	if rows["TIDE + LAMA"]["unsupported_case_count"] != 360:
+		raise ValueError("TIDE unsupported-case count mismatch")
 
 
 def _verify_measured_row(

@@ -10,7 +10,7 @@ theoretical contribution.
 | --- | --- | --- |
 | Temporal-goal benchmark | [`paper_artifacts/temporal_goal_benchmark/v1`](paper_artifacts/temporal_goal_benchmark/v1/README.md) | 475 unique natural-language translations and 1,228 bound query cases over 16 domains. |
 | Semantic conformance suite | `paper_artifacts/temporal_semantic_conformance/v1` | Direct finite-trace semantics versus MONA-derived automata, including zero-action cases. |
-| Evaluation release | `paper_artifacts/gp2pl_evaluation/v1` | Exact atomic libraries, one canonical five-seed record containing 6,140 Full GP2PL evaluations, the fixed 1,228-case temporal execution record, 29,472 paired ablation records, 2,456 external-reference records, 740 Raw MOOSE extension records, 13 certificate challenges, distribution summaries, and SHA-256 manifest. |
+| Evaluation release | `paper_artifacts/gp2pl_evaluation/v1` | Exact atomic libraries, one canonical five-seed record containing 6,140 Full GP2PL evaluations, the fixed 1,228-case temporal execution record, 29,472 paired ablation records, 3,684 external-reference records, 740 Raw MOOSE extension records, 13 certificate challenges, distribution summaries, and SHA-256 manifest. |
 
 The release contains no machine-local absolute paths. The canonical benchmark,
 per-domain views, frozen predictions, semantic validation rows, and source
@@ -169,8 +169,9 @@ records: Evidence Only solves 5,420 cases, Direct Producers 5,419, Maximum
 Feasible 6,059, and Full GP2PL 6,059. The paired temporal ablation contains
 4,912 per-case records: Unprotected Serialization solves 1,113 cases, Certified
 Flat and Certified Balanced each solve 1,228, and Module-Return Monitor solves
-1,212. The release also includes all 2,456 final per-case external-reference
-records and the corresponding status and PAR-2 aggregates. The measured Raw
+1,212. The release also includes all 3,684 final per-case external-reference
+records for achievement planning, FOND4LTLf, and TIDE, with the corresponding
+status and PAR-2 aggregates. The measured Raw
 MOOSE extension solves 117 of 740 seed-case evaluations on the four project
 extension domains; the separate published MOOSE reference reports a mean of
 1,079.6 solved cases out of 1,080 on its original domain scope.
