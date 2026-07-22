@@ -9,7 +9,8 @@ used by the reported evaluation. The temporal benchmark is
 - `five_seed_full_compiler_summary.json` contains all 6,140 Full GP2PL
   evaluations: 1,228 cases for each of five independently trained seeds.
 - `paired_ablation_results.json` contains 24,560 atomic and 4,912 temporal
-  paired-ablation records.
+  paired-ablation records, plus an integrated 6,140-record cross-seed extension
+  for the selected Certified Balanced compiler.
 - `temporal_execution_summary.json` contains the 1,228 final bound-query
   executions and all required verifier outcomes.
 - `external_reference_results.json` contains the 2,456 registered external
@@ -34,6 +35,12 @@ The atomic variants produce 5,420, 5,419, 6,059, and 6,059 valid traces for
 Evidence Only, Direct Producers, Maximum Feasible, and Full GP2PL. The temporal
 variants produce 1,113, 1,228, 1,228, and 1,212 valid traces for Unprotected
 Serialization, Certified Flat, Certified Balanced, and Module-Return Monitor.
+The temporal ablation uses the seed-0 Full GP2PL library. Its integrated
+cross-seed extension evaluates Certified Balanced over all five independently
+seeded Full GP2PL libraries: every seed validates all 1,228 queries, and every
+query retains the same primitive-action count across seeds. This extension
+tests the selected method's seed robustness; it does not rerun every temporal
+ablation variant over five seeds.
 `scripts/verify_public_result_release.py` recomputes these totals, paired case
 sets, status counts, and PAR-2 values from the released records.
 

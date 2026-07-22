@@ -24,6 +24,24 @@ TEMPORAL_VARIANTS = {
 	"certified_balanced": 1_228,
 	"completion_boundary_monitor": 1_212,
 }
+CROSS_SEED_TEMPORAL_SEEDS = (0, 1, 2, 3, 4)
+CROSS_SEED_TEMPORAL_RECORD_KEYS = frozenset(
+	{
+		"action_count",
+		"domain",
+		"duration_seconds",
+		"gold_accepted",
+		"jason_status",
+		"prediction_accepted",
+		"profile",
+		"sample_id",
+		"seed",
+		"status",
+		"val_attempted",
+		"val_success",
+		"valid",
+	}
+)
 EXTERNAL_STATUS_COUNTS = {
 	"achievement": {
 		"no_plan": 4,
@@ -92,15 +110,23 @@ def verify_public_result_release(release_root: str | Path) -> dict[str, int]:
 	"""Recompute all public aggregates from canonical per-case outcomes."""
 
 	root = Path(release_root).expanduser().resolve()
-	_verify_manifest(root)
+	manifest = _verify_manifest(root)
 	_verify_outcome_only_payloads(root)
 	_verify_benchmark_compatibility(root)
 	five_seed_count = _verify_five_seed_results(
 		_read_json(root / "five_seed_full_compiler_summary.json"),
 	)
-	atomic_count, temporal_count = _verify_paired_ablation(
+	atomic_count, temporal_count, cross_seed_temporal_count = _verify_paired_ablation(
 		_read_json(root / "paired_ablation_results.json"),
 	)
+	if manifest.get("paired_ablation_temporal_cross_seed_record_count") != (
+		cross_seed_temporal_count
+	):
+		raise ValueError("manifest cross-seed temporal record count mismatch")
+	if manifest.get("paired_ablation_temporal_cross_seed_seed_count") != len(
+		CROSS_SEED_TEMPORAL_SEEDS
+	):
+		raise ValueError("manifest cross-seed temporal seed count mismatch")
 	external_count = _verify_external_references(
 		_read_json(root / "external_reference_results.json"),
 	)
@@ -128,11 +154,12 @@ def verify_public_result_release(release_root: str | Path) -> dict[str, int]:
 		"moose_published_case_count": moose_case_count,
 		"raw_moose_extension_record_count": raw_moose_count,
 		"temporal_ablation_record_count": temporal_count,
+		"temporal_cross_seed_record_count": cross_seed_temporal_count,
 		"temporal_execution_record_count": temporal_execution_count,
 	}
 
 
-def _verify_manifest(root: Path) -> None:
+def _verify_manifest(root: Path) -> dict[str, Any]:
 	manifest = _read_json(root / "manifest.json")
 	if manifest.get("artifact_kind") != "gp2pl_reproducibility_release":
 		raise ValueError("unexpected evaluation manifest kind")
@@ -144,6 +171,7 @@ def _verify_manifest(root: Path) -> None:
 	}
 	if declared != actual:
 		raise ValueError("evaluation manifest does not match released files")
+	return manifest
 
 
 def _verify_outcome_only_payloads(root: Path) -> None:
@@ -226,7 +254,7 @@ def _verify_five_seed_results(payload: Mapping[str, Any]) -> int:
 	return len(records)
 
 
-def _verify_paired_ablation(payload: Mapping[str, Any]) -> tuple[int, int]:
+def _verify_paired_ablation(payload: Mapping[str, Any]) -> tuple[int, int, int]:
 	if payload.get("artifact_kind") != "gp2pl_paired_ablation_results":
 		raise ValueError("unexpected paired ablation artifact kind")
 	atomic_records = tuple(payload.get("atomic_records") or ())
@@ -260,7 +288,249 @@ def _verify_paired_ablation(payload: Mapping[str, Any]) -> tuple[int, int]:
 		temporal_records,
 		TEMPORAL_VARIANTS,
 	)
-	return len(atomic_records), len(temporal_records)
+	cross_seed_temporal_count = _verify_cross_seed_temporal(payload)
+	return len(atomic_records), len(temporal_records), cross_seed_temporal_count
+
+
+def _verify_cross_seed_temporal(payload: Mapping[str, Any]) -> int:
+	extension = dict(payload.get("temporal_cross_seed") or {})
+	if extension.get("artifact_kind") != (
+		"gp2pl_cross_seed_temporal_robustness_extension"
+	):
+		raise ValueError("unexpected cross-seed temporal artifact kind")
+	protocol = dict(extension.get("protocol") or {})
+	expected_protocol = {
+		"atomic_compiler_variant": "full",
+		"best_seed_selection": False,
+		"case_count_per_seed": 1_228,
+		"domain_count": 16,
+		"evidence_union": False,
+		"independent_seed_atomic_libraries": True,
+		"jason_java_stack_size": "64m",
+		"jason_timeout_seconds": 1_800,
+		"method": "Certified Balanced",
+		"plan_verifier_timeout_seconds": 1_800,
+		"seeds": list(CROSS_SEED_TEMPORAL_SEEDS),
+		"temporal_compiler_variant": "certified_balanced",
+		"validated_seed_zero_correction_count": 1,
+		"validation_workers": 6,
+	}
+	for key, expected in expected_protocol.items():
+		if protocol.get(key) != expected:
+			raise ValueError(f"cross-seed temporal protocol mismatch for {key}")
+
+	records = tuple(payload.get("temporal_cross_seed_records") or ())
+	if len(records) != 6_140:
+		raise ValueError("cross-seed temporal records are incomplete")
+	by_seed: dict[int, dict[tuple[str, str], Mapping[str, Any]]] = {}
+	for seed in CROSS_SEED_TEMPORAL_SEEDS:
+		seed_records = tuple(row for row in records if int(row.get("seed", -1)) == seed)
+		if len(seed_records) != 1_228:
+			raise ValueError(f"cross-seed temporal coverage mismatch for seed {seed}")
+		by_case: dict[tuple[str, str], Mapping[str, Any]] = {}
+		for row in seed_records:
+			if set(row) != CROSS_SEED_TEMPORAL_RECORD_KEYS:
+				raise ValueError("cross-seed temporal record schema mismatch")
+			case = (str(row["domain"]), str(row["sample_id"]))
+			if not all(case) or case in by_case:
+				raise ValueError("duplicate or empty cross-seed temporal case")
+			_require_case_measurements(row, runtime_key="duration_seconds")
+			if not all(
+				(
+					row["valid"] is True,
+					row["status"] == "success",
+					row["jason_status"] == "success",
+					row["val_attempted"] is True,
+					row["val_success"] is True,
+					row["gold_accepted"] is True,
+					row["prediction_accepted"] is True,
+				)
+			):
+				raise ValueError("cross-seed temporal record lacks complete acceptance")
+			by_case[case] = row
+		by_seed[seed] = by_case
+
+	baseline_cases = set(by_seed[CROSS_SEED_TEMPORAL_SEEDS[0]])
+	if any(set(by_seed[seed]) != baseline_cases for seed in CROSS_SEED_TEMPORAL_SEEDS[1:]):
+		raise ValueError("cross-seed temporal repetitions use different case sets")
+	seed_zero_ablation = {
+		(str(row["domain"]), str(row["sample_id"])): row
+		for row in payload.get("temporal_records") or ()
+		if row.get("variant") == "certified_balanced"
+	}
+	if set(seed_zero_ablation) != baseline_cases:
+		raise ValueError("seed-0 cross-seed records differ from the paired ablation cases")
+	shared_outcome_fields = (
+		"action_count",
+		"domain",
+		"duration_seconds",
+		"gold_accepted",
+		"jason_status",
+		"prediction_accepted",
+		"profile",
+		"sample_id",
+		"status",
+		"val_attempted",
+		"val_success",
+		"valid",
+	)
+	for case in sorted(baseline_cases):
+		cross_seed_row = by_seed[0][case]
+		ablation_row = seed_zero_ablation[case]
+		if any(
+			cross_seed_row[field] != ablation_row[field]
+			for field in shared_outcome_fields
+		):
+			raise ValueError(
+				"seed-0 cross-seed outcome differs from its paired ablation record",
+			)
+
+	expected_seed_results = []
+	for seed in CROSS_SEED_TEMPORAL_SEEDS:
+		seed_records = tuple(by_seed[seed].values())
+		valid_records = tuple(row for row in seed_records if row["valid"] is True)
+		status_counts = Counter(str(row["status"]) for row in seed_records)
+		par2_values = [
+			float(row["duration_seconds"]) if row["valid"] is True else 3_600.0
+			for row in seed_records
+		]
+		expected_seed_results.append(
+			{
+				"evaluation_count": len(seed_records),
+				"failure_count": len(seed_records) - len(valid_records),
+				"median_action_count": statistics.median(
+					[int(row["action_count"]) for row in valid_records],
+				),
+				"median_valid_seconds": statistics.median(
+					[float(row["duration_seconds"]) for row in valid_records],
+				),
+				"par2_seconds": statistics.mean(par2_values),
+				"seed": seed,
+				"status_counts": dict(sorted(status_counts.items())),
+				"success_count": len(valid_records),
+				"success_rate": len(valid_records) / len(seed_records),
+			}
+		)
+	if list(extension.get("seed_results") or ()) != expected_seed_results:
+		raise ValueError("cross-seed temporal seed aggregates differ from records")
+	balanced_aggregate = next(
+		row
+		for row in payload.get("temporal") or ()
+		if row.get("variant") == "certified_balanced"
+	)
+	if balanced_aggregate.get("par2_seconds") != expected_seed_results[0]["par2_seconds"]:
+		raise ValueError("seed-0 Certified Balanced PAR-2 differs across release views")
+
+	patterns: Counter[str] = Counter()
+	persistent_failures: list[dict[str, str]] = []
+	seed_sensitive_cases: list[dict[str, str]] = []
+	action_count_variant_cases: list[dict[str, Any]] = []
+	action_count_invariant_count = 0
+	action_count_unavailable_count = 0
+	group_patterns: dict[str, dict[str, list[str]]] = {
+		"domain": {},
+		"profile": {},
+	}
+	for domain, sample_id in sorted(baseline_cases):
+		case_rows = [by_seed[seed][(domain, sample_id)] for seed in CROSS_SEED_TEMPORAL_SEEDS]
+		profile = str(case_rows[0]["profile"])
+		if not profile or any(str(row["profile"]) != profile for row in case_rows):
+			raise ValueError("cross-seed temporal profile differs across seeds")
+		pattern = "".join("1" if row["valid"] is True else "0" for row in case_rows)
+		patterns[pattern] += 1
+		group_patterns["domain"].setdefault(domain, []).append(pattern)
+		group_patterns["profile"].setdefault(profile, []).append(pattern)
+		identity = {"domain": domain, "sample_id": sample_id}
+		if pattern == "00000":
+			persistent_failures.append(identity)
+		elif "0" in pattern and "1" in pattern:
+			seed_sensitive_cases.append({**identity, "pattern": pattern})
+		actions = [row.get("action_count") for row in case_rows]
+		if any(action is None for action in actions):
+			action_count_unavailable_count += 1
+		elif len({int(action) for action in actions}) == 1:
+			action_count_invariant_count += 1
+		else:
+			action_count_variant_cases.append(
+				{**identity, "action_counts": [int(action) for action in actions]},
+			)
+
+	if dict(extension.get("case_outcomes") or {}) != {
+		"action_count_variant_cases": action_count_variant_cases,
+		"pattern_counts": dict(sorted(patterns.items())),
+		"persistent_failures": persistent_failures,
+		"seed_sensitive_cases": seed_sensitive_cases,
+	}:
+		raise ValueError("cross-seed temporal case patterns differ from records")
+
+	seed_success_counts = [int(row["success_count"]) for row in expected_seed_results]
+	seed_success_rates = [float(row["success_rate"]) for row in expected_seed_results]
+	seed_par2 = [float(row["par2_seconds"]) for row in expected_seed_results]
+	expected_aggregate = {
+		"action_count_invariant_case_count": action_count_invariant_count,
+		"action_count_unavailable_case_count": action_count_unavailable_count,
+		"action_count_variant_case_count": len(action_count_variant_cases),
+		"all_seed_failure_case_count": patterns["00000"],
+		"all_seed_success_case_count": patterns["11111"],
+		"at_least_one_seed_success_case_count": len(baseline_cases) - patterns["00000"],
+		"failure_count": 6_140 - sum(seed_success_counts),
+		"maximum_seed_par2_seconds": max(seed_par2),
+		"mean_seed_par2_seconds": statistics.mean(seed_par2),
+		"mean_success_count": statistics.mean(seed_success_counts),
+		"mean_success_rate": statistics.mean(seed_success_rates),
+		"minimum_seed_par2_seconds": min(seed_par2),
+		"pooled_evaluation_count": 6_140,
+		"pooled_success_count": sum(seed_success_counts),
+		"sample_sd_seed_par2_seconds": statistics.stdev(seed_par2),
+		"sample_sd_success_count": statistics.stdev(seed_success_counts),
+		"sample_sd_success_rate": statistics.stdev(seed_success_rates),
+		"seed_sensitive_case_count": sum(
+			count for pattern, count in patterns.items() if "0" in pattern and "1" in pattern
+		),
+	}
+	if dict(extension.get("aggregate") or {}) != expected_aggregate:
+		raise ValueError("cross-seed temporal aggregate differs from records")
+	if list(extension.get("domains") or ()) != _cross_seed_group_rows(
+		group_patterns["domain"],
+		group_name="domain",
+	):
+		raise ValueError("cross-seed temporal domain rows differ from records")
+	if list(extension.get("profiles") or ()) != _cross_seed_group_rows(
+		group_patterns["profile"],
+		group_name="profile",
+	):
+		raise ValueError("cross-seed temporal profile rows differ from records")
+	return len(records)
+
+
+def _cross_seed_group_rows(
+	patterns_by_group: Mapping[str, Sequence[str]],
+	*,
+	group_name: str,
+) -> list[dict[str, Any]]:
+	rows = []
+	for name in sorted(patterns_by_group):
+		patterns = tuple(patterns_by_group[name])
+		success_counts = [
+			sum(pattern[index] == "1" for pattern in patterns)
+			for index in range(len(CROSS_SEED_TEMPORAL_SEEDS))
+		]
+		rates = [count / len(patterns) for count in success_counts]
+		rows.append(
+			{
+				group_name: name,
+				"case_count_per_seed": len(patterns),
+				"success_counts": success_counts,
+				"mean_success_rate": statistics.mean(rates),
+				"sample_sd_success_rate": statistics.stdev(rates),
+				"all_seed_success_case_count": patterns.count("11111"),
+				"seed_sensitive_case_count": sum(
+					"0" in pattern and "1" in pattern for pattern in patterns
+				),
+				"all_seed_failure_case_count": patterns.count("00000"),
+			}
+		)
+	return rows
 
 
 def _verify_external_references(payload: Mapping[str, Any]) -> int:
