@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections import defaultdict
 from copy import deepcopy
 import hashlib
 import json
@@ -136,15 +137,15 @@ def verify_public_result_release(release_root: str | Path) -> dict[str, int]:
 		CROSS_SEED_TEMPORAL_SEEDS
 	):
 		raise ValueError("manifest cross-seed temporal seed count mismatch")
+	moose_reference = _read_json(root / "moose_published_reference.json")
+	raw_moose = _read_json(root / "raw_moose_extension_five_seed_summary.json")
 	external_count = _verify_external_references(
 		_read_json(root / "external_reference_results.json"),
+		moose_reference=moose_reference,
+		raw_moose=raw_moose,
 	)
-	moose_case_count = _verify_moose_reference(
-		_read_json(root / "moose_published_reference.json"),
-	)
-	raw_moose_count = _verify_raw_moose_extension(
-		_read_json(root / "raw_moose_extension_five_seed_summary.json"),
-	)
+	moose_case_count = _verify_moose_reference(moose_reference)
+	raw_moose_count = _verify_raw_moose_extension(raw_moose)
 	temporal_execution_count = _verify_temporal_execution(
 		_read_json(root / "temporal_execution_summary.json"),
 	)
@@ -542,7 +543,12 @@ def _cross_seed_group_rows(
 	return rows
 
 
-def _verify_external_references(payload: Mapping[str, Any]) -> int:
+def _verify_external_references(
+	payload: Mapping[str, Any],
+	*,
+	moose_reference: Mapping[str, Any],
+	raw_moose: Mapping[str, Any],
+) -> int:
 	if payload.get("artifact_kind") != "gp2pl_external_reference_results":
 		raise ValueError("unexpected external-reference artifact kind")
 	if payload.get("schema_version") != 2:
@@ -605,6 +611,12 @@ def _verify_external_references(payload: Mapping[str, Any]) -> int:
 	if dict(payload.get("status_counts") or {}) != status_counts:
 		raise ValueError("published external status counts differ from records")
 	_verify_external_rows(payload, records)
+	_verify_external_domain_rows(
+		payload,
+		records,
+		moose_reference=moose_reference,
+		raw_moose=raw_moose,
+	)
 	return len(records)
 
 
@@ -672,6 +684,82 @@ def _verify_measured_row(
 		raise ValueError(f"external row count mismatch for {row['method']}")
 	if abs(float(row["par2_seconds"]) - par2_seconds) > 1e-9:
 		raise ValueError(f"external row PAR-2 mismatch for {row['method']}")
+
+
+def _verify_external_domain_rows(
+	payload: Mapping[str, Any],
+	records: Sequence[Mapping[str, Any]],
+	*,
+	moose_reference: Mapping[str, Any],
+	raw_moose: Mapping[str, Any],
+) -> None:
+	published_domains = {
+		str(row["domain"]): dict(row)
+		for row in dict(moose_reference["published_results"])["domains"]
+	}
+	raw_domains = {
+		str(row["domain"]): dict(row) for row in raw_moose["domains"]
+	}
+	if set(published_domains) & set(raw_domains):
+		raise ValueError("MOOSE external domain scopes overlap")
+	expected_domains = set(published_domains) | set(raw_domains)
+	actual_rows = {
+		str(row["domain"]): dict(row) for row in payload.get("domain_rows") or ()
+	}
+	if set(actual_rows) != expected_domains or len(actual_rows) != 16:
+		raise ValueError("external per-domain rows are incomplete")
+
+	by_method_domain: dict[tuple[str, str], list[Mapping[str, Any]]] = defaultdict(list)
+	for record in records:
+		by_method_domain[(str(record["method"]), str(record["domain"]))].append(
+			record,
+		)
+	for domain in sorted(expected_domains):
+		if domain in published_domains:
+			source = published_domains[domain]
+			moose = {
+				"source": "reported",
+				"supported_case_count": int(source["case_count_per_seed"]),
+				"valid_trace_count": float(source["mean_solved_count"]),
+			}
+		else:
+			source = raw_domains[domain]
+			moose = {
+				"source": "measured",
+				"supported_case_count": int(source["test_count"]),
+				"valid_trace_count": float(source["mean_valid_count"]),
+				"sample_sd_valid_count": float(source["sample_sd_valid_count"]),
+			}
+		test_count = int(moose["supported_case_count"])
+		expected: dict[str, Any] = {
+			"domain": domain,
+			"test_count": test_count,
+			"moose": moose,
+		}
+		for key, method in (
+			("lama", "LAMA"),
+			("mrp_hj", "MRP+HJ"),
+			("fond4ltlf_lama", "FOND4LTLf + LAMA"),
+			("tide_lama", "TIDE + LAMA"),
+		):
+			method_records = by_method_domain.get((method, domain), [])
+			if method_records and len(method_records) != test_count:
+				raise ValueError(f"{method} per-domain case count mismatch")
+			expected[key] = _external_domain_cell(method_records)
+		if actual_rows[domain] != expected:
+			raise ValueError(f"external per-domain row mismatch for {domain}")
+
+
+def _external_domain_cell(
+	records: Sequence[Mapping[str, Any]],
+) -> dict[str, int] | None:
+	supported = [record for record in records if record.get("supported", True) is True]
+	if not supported:
+		return None
+	return {
+		"supported_case_count": len(supported),
+		"valid_trace_count": sum(record["valid"] is True for record in supported),
+	}
 
 
 def _verify_moose_reference(payload: Mapping[str, Any]) -> int:

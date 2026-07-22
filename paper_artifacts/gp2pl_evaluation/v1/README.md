@@ -15,7 +15,8 @@ used by the reported evaluation. The temporal benchmark is
   executions and all required verifier outcomes.
 - `external_reference_results.json` contains 3,684 registered external
   planning records: 1,228 achievement cases and two independent 1,228-case
-  temporal matrices for FOND4LTLf and TIDE, with their PAR-2 aggregates.
+  temporal matrices for FOND4LTLf and TIDE, with their PAR-2 aggregates and
+  recomputable per-domain valid/supported rows.
 - `raw_moose_extension_five_seed_summary.json` contains 740 measured Raw MOOSE
   extension records across five seeds.
 - `moose_published_reference.json` records the MOOSE values reported by its
