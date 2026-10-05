@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use GP2PL, please cite the accompanying paper."
+title: >-
+  GP2PL: From Generalized Planning Evidence to BDI Plan Libraries for
+  Achievement and Temporally Extended Goals
+type: software
+authors:
+  - name: "GP2PL Authors"
+repository-code: "https://github.com/daidaibunny/gp2pl"
+license: Apache-2.0
+version: 0.1.0
+date-released: 2026-10-04
